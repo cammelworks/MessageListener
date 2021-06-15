@@ -14,10 +14,17 @@ exports.createUser = functions.firestore
     const teamName = context.params.teamName
     const message = newValue.message
     const sender = newValue.sender
+    const senderName = newValue.senderName
 
     functions.logger.info(teamName, { structuredData: true });
     functions.logger.info(message, { structuredData: true });
     functions.logger.info(sender, { structuredData: true });
+    const payload = {
+      notification: {
+        title: senderName + 'さんから新しいメッセージがあります',
+        body: message,
+      }
+    };
 
 
     var teamsRef = fireStore.collection('teams');
@@ -33,11 +40,13 @@ exports.createUser = functions.firestore
                 if (UserSnapshot.empty) {
                   functions.logger.info('No such collection!', { structuredData: true });
                 } else {
-                  UserSnapshot.forEach(doc => {
+                  UserSnapshot.forEach(token => {
+                    var tokenVal = token.data().token
                     if (doc.id == sender) {
                       return;
                     }
-                    functions.logger.info(doc.id, { structuredData: true });
+                    functions.logger.info(tokenVal, { structuredData: true });
+                    admin.messaging().sendToDevice(tokenVal, payload);
                 });
               }
             })
